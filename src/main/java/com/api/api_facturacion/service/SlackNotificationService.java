@@ -1,0 +1,93 @@
+package com.api.api_facturacion.service;
+
+import com.api.api_facturacion.model.Factura;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class SlackNotificationService {
+    
+    @Value("${slack.webhook.url:}")
+    private String slackWebhookUrl;
+    
+    private final WebClient webClient;
+    
+    public SlackNotificationService() {
+        this.webClient = WebClient.builder().build();
+    }
+    
+    public void enviarNotificacion(String mensaje) {
+        if (slackWebhookUrl == null || slackWebhookUrl.isEmpty()) {
+            System.out.println("⚠️ Slack Webhook URL no configurada");
+            return;
+        }
+        
+        try {
+            Map<String, String> payload = new HashMap<>();
+            payload.put("text", mensaje);
+            
+            webClient.post()
+                .uri(slackWebhookUrl)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(String.class)
+                .subscribe(
+                    response -> System.out.println("✅ Notificación enviada a Slack"),
+                    error -> System.err.println("❌ Error al enviar notificación: " + error.getMessage())
+                );
+        } catch (Exception e) {
+            System.err.println("❌ Error al enviar notificación a Slack: " + e.getMessage());
+        }
+    }
+    
+    public void notificarCreacionFactura(Factura factura) {
+        String mensaje = String.format(
+            "🆕 *Nueva Factura Creada*\n" +
+            "📄 Número: %s\n" +
+            "👤 Cliente: %s\n" +
+            "💰 Total: $%.2f\n" +
+            "📅 Fecha: %s\n" +
+            "📊 Estado: %s",
+            factura.getNumeroFactura(),
+            factura.getCliente(),
+            factura.getTotal(),
+            factura.getFechaEmision(),
+            factura.getEstado()
+        );
+        enviarNotificacion(mensaje);
+    }
+    
+    public void notificarActualizacionFactura(Factura factura) {
+        String mensaje = String.format(
+            "✏️ *Factura Actualizada*\n" +
+            "📄 Número: %s\n" +
+            "👤 Cliente: %s\n" +
+            "📊 Estado: %s\n" +
+            "💰 Total: $%.2f",
+            factura.getNumeroFactura(),
+            factura.getCliente(),
+            factura.getEstado(),
+            factura.getTotal()
+        );
+        enviarNotificacion(mensaje);
+    }
+    
+    public void notificarEliminacionFactura(Factura factura) {
+        String mensaje = String.format(
+            "🗑️ *Factura Eliminada*\n" +
+            "📄 Número: %s\n" +
+            "👤 Cliente: %s\n" +
+            "💰 Total: $%.2f",
+            factura.getNumeroFactura(),
+            factura.getCliente(),
+            factura.getTotal()
+        );
+        enviarNotificacion(mensaje);
+    }
+}
