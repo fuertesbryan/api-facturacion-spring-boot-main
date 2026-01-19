@@ -3,8 +3,6 @@ package com.api.api_facturacion.controller;
 import com.api.api_facturacion.model.Factura;
 import com.api.api_facturacion.repository.FacturaRepository;
 import com.api.api_facturacion.service.AuditoriaService;
-import com.api.api_facturacion.service.EmailNotificationService;
-import com.api.api_facturacion.service.SlackNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -25,12 +23,6 @@ public class FacturaController {
     
     @Autowired
     private AuditoriaService auditoriaService;
-    
-    @Autowired
-    private EmailNotificationService emailService;
-    
-    @Autowired
-    private SlackNotificationService slackService;
     
     @GetMapping
     public ResponseEntity<List<Factura>> obtenerTodasLasFacturas() {
@@ -62,10 +54,6 @@ public class FacturaController {
             
             // Registrar auditoría
             auditoriaService.registrarCreacion(nuevaFactura);
-            
-            // Enviar notificaciones asíncronas
-            emailService.notificarCreacionFactura(nuevaFactura);
-            slackService.notificarCreacionFactura(nuevaFactura);
             
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevaFactura);
         } catch (Exception e) {
@@ -99,10 +87,6 @@ public class FacturaController {
         // Registrar auditoría
         auditoriaService.registrarActualizacion(facturaGuardada);
         
-        // Enviar notificaciones
-        emailService.notificarActualizacionFactura(facturaGuardada);
-        slackService.notificarActualizacionFactura(facturaGuardada);
-        
         return ResponseEntity.ok(facturaGuardada);
     }
     
@@ -118,10 +102,6 @@ public class FacturaController {
         
         // Registrar auditoría antes de eliminar
         auditoriaService.registrarEliminacion(facturaAEliminar);
-        
-        // Enviar notificaciones
-        emailService.notificarEliminacionFactura(facturaAEliminar);
-        slackService.notificarEliminacionFactura(facturaAEliminar);
         
         facturaRepository.deleteById(id);
         return ResponseEntity.noContent().build();
